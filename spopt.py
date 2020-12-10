@@ -48,6 +48,7 @@ Version 0.2 ... 2020/03: add Eucliean metric
 Version 1.0 ... 2020/06: Release at github: https://github.com/opt-gaobin/spopt
 """
 import numpy as np
+import numpy.linalg as lin
 import argparse
 import time
 from control.matlab import *
@@ -58,9 +59,8 @@ def feval(funcName, *args):
     This function is similar to "feval" in Matlab.
     Example: feval('cos', pi) = -1.
     """
-
-    return np.linalg.norm(args[0] - args[1], 'fro') ** 2, 2 * (args[0] - args[1])
     # return eval(funcName)(*args)
+    return lin.norm(args[0] - args[1], 'fro') ** 2, 2 * (args[0] - args[1])
 
 
 def spopt(X=None, fun=None, opt=None, *args, **kwargs):
@@ -120,7 +120,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
         if k < n:
             if pg == 1:
                 XX = np.matmul(X.transpose(), X)
-                invXXXJG, _, _, _ = np.linalg.lstsq(XX, np.matmul(JX.transpose(), G), rcond=None)  # Fix this
+                invXXXJG = lin.solve(np.matmul(XX.transpose(), XX), np.matmul(XX.transpose(), np.matmul(JX.transpose(), G)))
                 PG = G - np.matmul(JX, invXXXJG) + np.matmul(X, GX.transpose())
             else:
                 XJG = np.matmul(XJ.transpose(), G)
@@ -169,13 +169,13 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             W = np.matmul(-0.5, (W + W.transpose()))
 
     # Compute initial error
-    XFeasi = np.linalg.norm(np.matmul(X.transpose(), JX) - J2k, 'fro')
+    XFeasi = lin.norm(np.matmul(X.transpose(), JX) - J2k, 'fro')
     if metric == 1:
         dtX = np.matmul(PG, (np.matmul(XJ.transpose(), JX))) + np.matmul(XJ, (np.matmul(PG.transpose(), JX)))
     else:
         dtX = G - np.matmul(JX, Omega)
 
-    nrmG = np.linalg.norm(dtX, 'fro')
+    nrmG = lin.norm(dtX, 'fro')
     # nrmG0 = nrmG  # Initial gradient norm
 
     # Save history
@@ -217,9 +217,9 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             if retr == 1:
                 # Cayley
                 if invH:
-                    X, _, _, _ = np.linalg.lstsq(eye2n - (tau * HJ), XP + (tau * RJX), rcond=None)
+                    X = lin.solve(np.matmul((eye2n - (tau * HJ)).transpose(), eye2n - (tau * HJ)), np.matmul((eye2n - (tau * HJ)).transpose(), XP + (tau * RJX)))
                 else:
-                    aa, _, _, _ = np.linalg.lstsq(eye4k + (0.5 * tau * VJU), VJX, rcond=None)
+                    aa = lin.solve(np.matmul((eye4k + (0.5 * tau * VJU)).transpose(), eye4k + (0.5 * tau * VJU)), np.matmul((eye4k + (0.5 * tau * VJU)).transpose(), VJX))
                     X = XP + np.matmul(U, (tau * aa))
             else:
                 # Quasi-geodesic
@@ -236,8 +236,8 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
                 # Direct computation based on quasi-geodesic curve
                 # U = [X,-dtX]; JW = [W(k+1:end,:); -W(1:k,:)];
                 # if nls == 1; JZJZ = [-dtX(:,k+1:end) dtX(:,1:k)]'*[dtX(n+1:end,:); -dtX(1:n,:)]; end;
-                # H = [-JW -JZJZ; eye2k -JW]; ExpH = np.linalg.expm(tau*H);
-                # X = U*(ExpH(:,1:2*k)*np.linalg.expm(tau*JW));
+                # H = [-JW -JZJZ; eye2k -JW]; ExpH = lin.expm(tau*H);
+                # X = U*(ExpH(:,1:2*k)*lin.expm(tau*JW));
 
             # ----- evaluate function -----
             F, G = feval(fun, X, args[0])
@@ -256,7 +256,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             if k < n:
                 if pg == 1:
                     XX = np.matmul(X.transpose(), X)
-                    invXXXJG, _, _, _ = np.linalg.lstsq(XX, np.matmul(JX.transpose(), G), rcond=None)
+                    invXXXJG = lin.solve(np.matmul(XX.transpose(), XX), np.matmul(XX.transpose(), np.matmul(JX.transpose(), G)))
                     PG = G - np.matmul(JX, invXXXJG) + np.matmul(X, GX.transpose())
                 else:
                     XJG = np.matmul(XJ.transpose(), G)
@@ -297,18 +297,16 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
 
         # ---------------------- compute error ----------------------
         S = X - XP
-        XDiff = np.linalg.norm(S, 'fro') / np.sqrt(n)
+        XDiff = lin.norm(S, 'fro') / np.sqrt(n)
         tauk = tau
         FDiff = abs(FP - F) / (abs(FP) + 1)
-        XFeasi = np.linalg.norm(np.matmul(X.transpose(), JX) - J2k, 'fro')
+        XFeasi = lin.norm(np.matmul(X.transpose(), JX) - J2k, 'fro')
         if metric == 1:
             dtX = np.matmul(PG, (np.matmul(XJ.transpose(), JX))) + np.matmul(XJ, (np.matmul(PG.transpose(), JX)))
         else:
             dtX = G - np.matmul(JX, Omega)
-        nrmG = np.linalg.norm(dtX, 'fro')
-        # out.fvals[itr + 1] = F
-        # out.kkts[itr + 1] = nrmG
-        # out.feaXs[itr + 1] = XFeasi
+        nrmG = lin.norm(dtX, 'fro')
+
         out.fvals.append(F)
         out.kkts.append(nrmG)
         out.feaXs.append(XFeasi)
@@ -325,17 +323,17 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             Y = dtX - dtXP
             SY = abs(iprod(S, Y))
             if np.mod(itr, 2) == 0:
-                tau = (np.linalg.norm(S, 'fro') ** 2) / SY
+                tau = (lin.norm(S, 'fro') ** 2) / SY
             else:
-                tau = SY / (np.linalg.norm(Y, 'fro') ** 2)
+                tau = SY / (lin.norm(Y, 'fro') ** 2)
         elif 2 == opt.stepsize:  # BB1
             Y = dtX - dtXP
             SY = abs(iprod(S, Y))
-            tau = (np.linalg.norm(S, 'fro') ** 2) / SY
+            tau = (lin.norm(S, 'fro') ** 2) / SY
         elif 3 == opt.stepsize:  # BB2
             Y = dtX - dtXP
             SY = abs(iprod(S, Y))
-            tau = SY / (np.linalg.norm(Y, 'fro') ** 2)
+            tau = SY / (lin.norm(Y, 'fro') ** 2)
         elif 4 == opt.stepsize:  # Noceldal & Wright, p59(3.60)
             tau = abs(2 * (FP - F) / iprod(G, dtX))
             # tau = abs(2*(FP - F)/nrmG^2); # Euclidean

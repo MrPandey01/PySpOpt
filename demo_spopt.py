@@ -1,8 +1,4 @@
-# Generated with SMOP  0.41-beta
-# from libsmop import *
-# demo_spopt.m
 from spopt import *
-
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
 
@@ -16,16 +12,15 @@ from scipy.linalg import expm
 # solver:       Cayley and quasi-geodesic retraction (Canonical-like metric)
 # output:       function information, iterative figures
 # -------------------------------------
-# Author: Bin Gao (https://www.gaobin.cc)
-#   Version 1.0 ... 2020/06
+# Author: Arun Pandey (Original src in MatLab: Bin Gao (https://www.gaobin.cc))
+#   Version 1.0 ...
 # --------------------------------------------------------------------------
-# objective function
 
+# objective function
 def fun(X=None, A=None, *args, **kwargs):
     F = np.linalg.norm(X - A, 'fro') ** 2
     G = 2 * (X - A)
     return F, G
-
 
 if __name__ == '__main__':
     pass
