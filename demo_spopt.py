@@ -108,10 +108,10 @@ if __name__ == '__main__':
     # figure
     # --- function value ---
     f_fval, ax = plt.subplots()
-    ax.plot(out1.times, out1.fvals, 'r-', linewidth=1.5, label='Sp-Cayley')
-    ax.plot(out2.times, out2.fvals, 'b--', linewidth=1.5, label='Quasi-geodesic')
+    ax.plot(out1.times, out1.fvals, 'r-o', label='Sp-Cayley')
+    ax.plot(out2.times, out2.fvals, 'b--+', label='Quasi-geodesic')
     plt.yscale('log', basey=10)
-    plt.xlabel('time(s)')
+    plt.xlabel('time(sec)')
     plt.ylabel('function value')
     plt.title(r'$Size: {} \times {} $'.format(2 * n, 2 * k))
     plt.legend()
@@ -119,10 +119,10 @@ if __name__ == '__main__':
 
     # --- gradient ---
     f_kkt, ax = plt.subplots()
-    ax.plot(out1.times, out1.kkts, 'r-o', linewidth=1.5, label='Sp-Cayley')
-    ax.plot(out2.times, out2.kkts, 'b--+', linewidth=1.5, label='Quasi-geodesic')
+    ax.plot(out1.times, out1.kkts, 'r-o', label='Sp-Cayley')
+    ax.plot(out2.times, out2.kkts, 'b--+', label='Quasi-geodesic')
     plt.yscale('log', basey=10)
-    plt.xlabel('time (s)')
+    plt.xlabel('time (sec)')
     plt.ylabel(r'$||\nabla f||$')
     plt.title(r'$Size: {} \times {} $'.format(2 * n, 2 * k))
     plt.legend()

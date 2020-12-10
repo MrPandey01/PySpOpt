@@ -189,7 +189,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
     out.times.append(0)
     t = time.time()
 
-    # line-search parameter
+    # Line-search parameter
     Q = 1
     Cval = F
 
@@ -239,7 +239,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
                 # H = [-JW -JZJZ; eye2k -JW]; ExpH = lin.expm(tau*H);
                 # X = U*(ExpH(:,1:2*k)*lin.expm(tau*JW));
 
-            # ----- evaluate function -----
+            # ----- Evaluate function -----
             F, G = feval(fun, X, args[0])
             out.nfe = out.nfe + 1
             # ----- line search --------
@@ -248,7 +248,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             tau = eta * tau
             nls = nls + 1
 
-        # -------------------- prepare retraction --------------------
+        # -------------------- Prepare retraction --------------------
         XJ = np.concatenate([- X[:, k:], X[:, :k]], axis=1)
         JX = np.concatenate([X[n:, :], -X[:n, :]], axis=0)
         if metric == 1:
@@ -295,7 +295,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
                 W = - JXG + np.matmul(XX, Omega)
                 W = np.matmul(- 0.5, (W + W.transpose()))
 
-        # ---------------------- compute error ----------------------
+        # ---------------------- Compute error ----------------------
         S = X - XP
         XDiff = lin.norm(S, 'fro') / np.sqrt(n)
         tauk = tau
@@ -358,7 +358,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
         Cval = ((gamma * Qp * Cval) + F) / Q
 
     # ------------------------------------------------------------------------
-    # output
+    # Output
     if itr >= opt.mxitr:
         out.msg = 'exceed max iteration'
 
@@ -375,7 +375,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
     return X, out
 
 
-# nest-function: inner product
+# Nest-function: inner product
 def iprod(x=None, y=None, *args, **kwargs):
     # a = real(sum(sum(conj(x).*y)));
     return np.real(sum(sum(np.multiply(x, y))))
