@@ -39,6 +39,7 @@ if __name__ == '__main__':
 
     # --- scenario 2:
     # A is totally randomly generated
+    # A = np.load('A.npy')
     A = np.random.randn(2 * n, 2 * k)
     A = A / np.linalg.norm(A, 2)
 
@@ -74,12 +75,12 @@ if __name__ == '__main__':
     opt.mxitr = 1000
     opt.gtol = 1e-06
 
-    # --- generate initial guess ---
+    # --- Generate initial guess ---
     # type 1: "identity"
     # X0 = zeros(2*n,2*k); X0(1:k,1:k) = eye(k); X0(n+1:n+k,k+1:end) = eye(k);
     # type 2: random
     W = np.random.randn(2 * k, 2 * k)
-
+    # W = np.load('W.npy')
     W = np.matmul(W.transpose(), W) + 0.1 * np.eye((2 * k))
 
     E = expm(np.concatenate([W[k:, :], -W[:k, :]], axis=0))
@@ -88,7 +89,7 @@ if __name__ == '__main__':
                          E[k:, :],
                          np.zeros((n - k, 2 * k))], axis=0)
 
-    # call solver
+    # Call solver
     # --- Cayley retraction ---
     st1 = time.time()
     __, out1 = spopt(X0, fun, opt, A)
@@ -105,24 +106,24 @@ if __name__ == '__main__':
     print('spopt-geo: obj: {:.3e}, itr: {}, nrmG: {:.3e}, nfe: {}, time: {:.3f}, |X^T J X - J|: {:.3e}'
           .format(out2.fval, out2.itr, out2.nrmG, out2.nfe, ste2, out2.feaX))
 
-    # figure
-    # --- function value ---
+    # Figure
+    # --- Function value ---
     f_fval, ax = plt.subplots()
     ax.plot(out1.times, out1.fvals, 'r-o', label='Sp-Cayley')
     ax.plot(out2.times, out2.fvals, 'b--+', label='Quasi-geodesic')
     plt.yscale('log', basey=10)
-    plt.xlabel('time(sec)')
-    plt.ylabel('function value')
+    plt.xlabel('Time(sec)')
+    plt.ylabel('Function value')
     plt.title(r'$Size: {} \times {} $'.format(2 * n, 2 * k))
     plt.legend()
     plt.show()
 
-    # --- gradient ---
+    # --- Gradient ---
     f_kkt, ax = plt.subplots()
     ax.plot(out1.times, out1.kkts, 'r-o', label='Sp-Cayley')
     ax.plot(out2.times, out2.kkts, 'b--+', label='Quasi-geodesic')
     plt.yscale('log', basey=10)
-    plt.xlabel('time (sec)')
+    plt.xlabel('Time (sec)')
     plt.ylabel(r'$||\nabla f||$')
     plt.title(r'$Size: {} \times {} $'.format(2 * n, 2 * k))
     plt.legend()

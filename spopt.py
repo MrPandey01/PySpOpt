@@ -371,7 +371,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
     out.feaX = XFeasi
     out.nrmG = nrmG
     out.fval = F
-    out.itr = itr
+    out.itr = itr + 1
     return X, out
 
 
