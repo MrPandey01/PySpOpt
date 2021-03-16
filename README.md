@@ -1,3 +1,5 @@
+Python implementation SpOpt package (originally in Matlab): Reimannian Optimization on Symplectic Stiefel Manifold 
+
 # spopt
 A Python solver for Riemannian Optimization on the Symplectic Stiefel manifold. This was originally written in Matlab by [1].
 
