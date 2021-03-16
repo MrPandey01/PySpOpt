@@ -16,7 +16,7 @@ from scipy.linalg import expm
 #   Version 1.0 ...
 # --------------------------------------------------------------------------
 
-# objective function
+# Objective function
 def fun(X=None, A=None, *args, **kwargs):
     F = np.linalg.norm(X - A, 'fro') ** 2
     G = 2 * (X - A)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
     # Figure
     # --- Function value ---
     f_fval, ax = plt.subplots()
-    ax.plot(out1.times, out1.fvals, 'r-o', label='Sp-Cayley')
+    ax.plot(out1.times, out1.fvals, 'r-*', label='Sp-Cayley')
     ax.plot(out2.times, out2.fvals, 'b--+', label='Quasi-geodesic')
     plt.yscale('log', basey=10)
     plt.xlabel('Time(sec)')
@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
     # --- Gradient ---
     f_kkt, ax = plt.subplots()
-    ax.plot(out1.times, out1.kkts, 'r-o', label='Sp-Cayley')
+    ax.plot(out1.times, out1.kkts, 'r-*', label='Sp-Cayley')
     ax.plot(out2.times, out2.kkts, 'b--+', label='Quasi-geodesic')
     plt.yscale('log', basey=10)
     plt.xlabel('Time (sec)')
