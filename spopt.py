@@ -1,8 +1,11 @@
 """
-spopt is a solver for Optimization on the Symplectic Stiefel manifold:
+Python implementation of SpOpt solver for Optimization on the Symplectic Stiefel manifold:
+
 min f(X), s.t., X'*J_{2n}*X = J_{2k},
 
-where $X \in R^{2n,2k} and J_{2k} = [zeros(k,k),eye(k);-eye(k),zeros(k,k)]$
+where $X \in R^{2n,2k} and J_{2k} = [zeros(k,k),eye(k);-eye(k),zeros(k,k)]$.
+
+Originally written in matlab by Bin Gao et a;. (https://github.com/opt-gaobin/spopt)
 
 ------- main iterative update: X(tau) -------
 P = I - J*X*inv(X'*X)*X'*J' + 0.5*pm*X*X';
@@ -42,10 +45,6 @@ Reference:
 Bin Gao, Nguyen Thanh Son, P.-A. Absil, Tatjana Stykel
 1. Riemannian optimization on the symplectic Stiefel manifold (https://arxiv.org/abs/2006.15226)
 2. Riemannian gradient method on the symplectic Stiefel manifold based on the Euclidean metric
-Author: Bin Gao (https://www.gaobin.cc)
-Version 0.1 ... 2019/11
-Version 0.2 ... 2020/03: add Eucliean metric
-Version 1.0 ... 2020/06: Release at github: https://github.com/opt-gaobin/spopt
 """
 import numpy as np
 import numpy.linalg as lin
@@ -53,15 +52,6 @@ import argparse
 import time
 from control.matlab import *
 from scipy.linalg import expm
-
-def feval(funcName, *args):
-    """
-    This function is similar to "feval" in Matlab.
-    Example: feval('cos', pi) = -1.
-    """
-    # return eval(funcName)(*args)
-    return lin.norm(args[0] - args[1], 'fro') ** 2, 2 * (args[0] - args[1])
-
 
 def spopt(X=None, fun=None, opt=None, *args, **kwargs):
     # for output
@@ -105,22 +95,23 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
 
     # ------------------------------------------------------------------------
     # Initialization
-    J2k = np.concatenate([np.concatenate([np.zeros((k, k)), np.eye(k)], axis=1),
-                          np.concatenate([-np.eye(k), np.zeros((k, k))], axis=1)], axis=0)
+    J2k = np.concatenate((np.concatenate((np.zeros((k, k)), np.eye(k)), axis=1),
+                          np.concatenate((-np.eye(k), np.zeros((k, k))), axis=1)), axis=0)
 
     # Evaluate function and gradient info.
-    F, G = feval(fun, X, args[0])  # this is a problem, figure it out
+    F, G = fun(X, args[0])  # this is a problem, figure it out
     out.nfe = 1
 
     # Preparations for the first update
-    XJ = np.concatenate([-X[:, k:], X[:, :k]], axis=1)
-    JX = np.concatenate([X[n:, :], -X[:n, :]], axis=0)
+    XJ = np.concatenate((-X[:, k:], X[:, :k]), axis=1)
+    JX = np.concatenate((X[n:, :], -X[:n, :]), axis=0)
     if metric == 1:
         GX = 0.5 * pm * np.matmul(G.transpose(), X)
         if k < n:
             if pg == 1:
                 XX = np.matmul(X.transpose(), X)
-                invXXXJG = lin.solve(np.matmul(XX.transpose(), XX), np.matmul(XX.transpose(), np.matmul(JX.transpose(), G)))
+                invXXXJG = lin.solve(np.matmul(XX.transpose(), XX), np.matmul(XX.transpose(), np.matmul(JX.transpose(),
+                                                                                                        G)))  # implemented psuedo-inverse
                 PG = G - np.matmul(JX, invXXXJG) + np.matmul(X, GX.transpose())
             else:
                 XJG = np.matmul(XJ.transpose(), G)
@@ -141,25 +132,43 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             invH = False
             eye2k = np.eye(2 * k)
             eye4k = np.eye(4 * k)
-        if invH:
-            PGXJ = np.matmul(- PG, XJ.transpose())
-            H = PGXJ + PGXJ.transpose()
-            HJ = np.concatenate([-H[:, n:], H[:, :n]], axis=1)
-            RJX = np.matmul(H, JX)
-        else:
-            U = np.concatenate([-PG, XJ], axis=1)
-            PGJPG = np.matmul(np.concatenate([PG[n:, :], -PG[:n, :]], axis=0).transpose(), PG)
-            VJU = np.concatenate(
-                [np.concatenate([GX.transpose(), J2k.transpose()], axis=1), np.concatenate([PGJPG, - GX], axis=1)],
-                axis=0)
-            VJX = np.concatenate([eye2k, np.concatenate([GX[:, k:], -GX[:, :k]], axis=1)], axis=0)
-            # Direct way to get VJU and VJX
-            # U =  [-PG, XJ]; V = [XJ, -PG];	VJU = V'*[-U(n+1:end,:); U(1:n,:)];
-            # VJX = V'*JX;
+            if metric == 1:
+                if invH:
+                    PGXJ = np.matmul(- PG, XJ.transpose())
+                    H = PGXJ + PGXJ.transpose()
+                    HJ = np.concatenate((-H[:, n:], H[:, :n]), axis=1)
+                    RJX = np.matmul(H, JX)
+                else:
+                    U = np.concatenate((-PG, XJ), axis=1)
+                    PGJPG = np.matmul(np.concatenate((PG[n:, :], -PG[:n, :]), axis=0).transpose(), PG)
+                    VJU = np.concatenate(
+                        (np.concatenate((GX.transpose(), J2k.transpose()), axis=1),
+                         np.concatenate((PGJPG, - GX), axis=1)),
+                        axis=0)
+                    VJX = np.concatenate((eye2k, np.concatenate((GX[:, k:], -GX[:, :k]), axis=1)), axis=0)
+                    # Direct way to get VJU and VJX
+                    # U =  [-PG, XJ]; V = [XJ, -PG];	VJU = V'*[-U(n+1:end,:); U(1:n,:)];
+                    # VJX = V'*JX;
+            else:
+                # activate only if "Euclidean + Cayley" ----------------
+                Omega = lyap(XX, -skewXJG)
+                W = -JXG + np.matmul(XX, Omega)
+                W = -0.5 * (W + W.transpose())
+                PG = G - np.matmul(XJ, (0.5 * JXG)) - np.matmul(JX, Omega) + np.matmul(XJ, (0.5 * np.matmul(XX, Omega)))
+                if invH:
+                    PGXJ = np.matmul(-PG, XJ).transpose()
+                    H = PGXJ + PGXJ.transpose()
+                    HJ = np.concatenate((-H[:, n:], H[:, :n]), axis=1)
+                    RJX = np.matmul(H, JX)
+                else:
+                    U = np.concatenate((-PG, XJ), axis=1)
+                    V = np.concatenate((XJ, -PG), axis=1)
+                    VJU = np.matmul(V.transpose(), np.concatenate((-U[n:, :], U[:n, :]), axis=0))
+                    VJX = np.matmul(V.transpose(), JX)
     else:
         eye2k = np.eye(2 * k)
         if metric == 1:
-            W = np.concatenate([-GX[:, k:], GX[:, :k]], axis=1)
+            W = np.concatenate((-GX[:, k:], GX[:, :k]), axis=1)
             W = W + W.transpose()
             # Direct way to get W
             # XJG = XJ'*G; W = 0.5*pm*(XJG+XJG');
@@ -189,7 +198,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
     out.times.append(0)
     t = time.time()
 
-    # Line-search parameter
+    # line-search parameter
     Q = 1
     Cval = F
 
@@ -199,8 +208,11 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
         print('------------------------------------------------------------------------')
         print('Solver setting... ({} metric, {} retraction)'.format(metricname, retrname))
         print('----------- Riemannian Gradient Method with Line search ----------------- ')
-        print('{:<7s} {:<7} {:<7s} {:<7s} {:<7s} {:<7s} {:<7s}'.format('Iter', 'tau', 'F(X)', 'nrmG', 'XDiff', 'FDiff', 'XFeasi'))
-        print('{:<7}  {:<7}  {:<7.3e}  {:<7.3e}  {:<7}  {:<7}  {:<7.3e}  {:<7}'.format(0, '.', F, nrmG, '.', '.', XFeasi, '.'))
+        print('{:<7s} {:<7} {:<7s} {:<7s} {:<7s} {:<7s} {:<7s}'.format('Iter', 'tau', 'F(X)', 'nrmG', 'XDiff', 'FDiff',
+                                                                       'XFeasi'))
+        print(
+            '{:<7}  {:<7}  {:<7.3e}  {:<7.3e}  {:<7}  {:<7}  {:<7.3e}  {:<7}'.format(0, '.', F, nrmG, '.', '.', XFeasi,
+                                                                                     '.'))
 
     # ------------------------------------------------------------------------
     # Main iteration
@@ -217,19 +229,21 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             if retr == 1:
                 # Cayley
                 if invH:
-                    X = lin.solve(np.matmul((eye2n - (tau * HJ)).transpose(), eye2n - (tau * HJ)), np.matmul((eye2n - (tau * HJ)).transpose(), XP + (tau * RJX)))
+                    X = lin.solve(np.matmul((eye2n - (0.5 * tau * HJ)).transpose(), eye2n - (0.5 * tau * HJ)),
+                                  np.matmul((eye2n - (0.5 * tau * HJ)).transpose(), XP + (0.5 * tau * RJX)))
                 else:
-                    aa = lin.solve(np.matmul((eye4k + (0.5 * tau * VJU)).transpose(), eye4k + (0.5 * tau * VJU)), np.matmul((eye4k + (0.5 * tau * VJU)).transpose(), VJX))
+                    aa = lin.solve(np.matmul((eye4k + (0.5 * tau * VJU)).transpose(), eye4k + (0.5 * tau * VJU)),
+                                   np.matmul((eye4k + (0.5 * tau * VJU)).transpose(), VJX))
                     X = XP + np.matmul(U, (tau * aa))
             else:
                 # Quasi-geodesic
-                U = np.concatenate([XP, -tau * dtX], axis=1)
-                JWt = tau * np.concatenate([W[k:, :], -W[:k, :]], axis=0)
+                U = np.concatenate((XP, -tau * dtX), axis=1)
+                JWt = tau * np.concatenate((W[k:, :], -W[:k, :]), axis=0)
                 if nls == 1:
-                    JZJZ = np.matmul(np.concatenate([-dtX[:, k:], dtX[:, :k]], axis=1).transpose(),
-                                     np.concatenate([dtX[n:, :], -dtX[:n, :]], axis=0))
-                H = np.concatenate([np.concatenate([-JWt, (-(tau ** 2) * JZJZ)], axis=1),
-                                    np.concatenate([eye2k, -JWt], axis=1)], axis=0)
+                    JZJZ = np.matmul(np.concatenate((-dtX[:, k:], dtX[:, :k]), axis=1).transpose(),
+                                     np.concatenate((dtX[n:, :], -dtX[:n, :]), axis=0))
+                H = np.concatenate((np.concatenate((-JWt, (-(tau ** 2) * JZJZ)), axis=1),
+                                    np.concatenate((eye2k, -JWt), axis=1)), axis=0)
                 ExpH = expm(H)
                 X = np.matmul(U, (np.matmul(ExpH[:, :2 * k], expm(JWt))))
 
@@ -239,24 +253,25 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
                 # H = [-JW -JZJZ; eye2k -JW]; ExpH = lin.expm(tau*H);
                 # X = U*(ExpH(:,1:2*k)*lin.expm(tau*JW));
 
-            # ----- Evaluate function -----
-            F, G = feval(fun, X, args[0])
+            # ----- evaluate function -----
+            F, G = fun(X, args[0])
             out.nfe = out.nfe + 1
             # ----- line search --------
-            if F <= Cval - (tau* deriv) or nls >= nt:
+            if F <= Cval - (tau * deriv) or nls >= nt:
                 break
             tau = eta * tau
             nls = nls + 1
 
-        # -------------------- Prepare retraction --------------------
-        XJ = np.concatenate([- X[:, k:], X[:, :k]], axis=1)
-        JX = np.concatenate([X[n:, :], -X[:n, :]], axis=0)
+        # -------------------- prepare retraction --------------------
+        XJ = np.concatenate((- X[:, k:], X[:, :k]), axis=1)
+        JX = np.concatenate((X[n:, :], -X[:n, :]), axis=0)
         if metric == 1:
             GX = 0.5 * pm * np.matmul(G.transpose(), X)
             if k < n:
                 if pg == 1:
                     XX = np.matmul(X.transpose(), X)
-                    invXXXJG = lin.solve(np.matmul(XX.transpose(), XX), np.matmul(XX.transpose(), np.matmul(JX.transpose(), G)))
+                    invXXXJG = lin.solve(np.matmul(XX.transpose(), XX),
+                                         np.matmul(XX.transpose(), np.matmul(JX.transpose(), G)))
                     PG = G - np.matmul(JX, invXXXJG) + np.matmul(X, GX.transpose())
                 else:
                     XJG = np.matmul(XJ.transpose(), G)
@@ -271,19 +286,37 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
             skewXJG = JXG - JXG.transpose()
 
         if retr == 1:
-            if invH:
-                PGXJ = np.matmul(-PG, XJ.transpose())
-                H = 0.5 * (PGXJ + PGXJ.transpose())
-                HJ = np.concatenate([-H[:, n:], H[:, :n]], axis=1)
-                RJX = np.matmul(H, JX)
+            if metric == 1:
+                if invH:
+                    PGXJ = np.matmul(-PG, XJ.transpose())
+                    H = 0.5 * (PGXJ + PGXJ.transpose())
+                    HJ = np.concatenate((-H[:, n:], H[:, :n]), axis=1)
+                    RJX = np.matmul(H, JX)
+                else:
+                    U = np.concatenate((- PG, XJ), axis=1)
+                    PGJPG = np.matmul(np.concatenate((PG[n:, :], -PG[:n, :]), axis=0).transpose(), PG)
+                    VJU = np.concatenate((np.concatenate((GX.transpose(), J2k.transpose()), axis=1),
+                                          np.concatenate((PGJPG, -GX), axis=1)), axis=0)
+                    VJX = np.concatenate((eye2k, np.concatenate((GX[:, k:], -GX[:, :k]), axis=1)), axis=0)
+                    # Direct way to get VJU and VJX
+                    # U =  [-PG, XJ]; V = [XJ, -PG];	VJU = V'*[-U(n+1:end,:); U(1:n,:)];
+                    # VJX = V'*JX;
             else:
-                U = np.concatenate([- PG, XJ], axis=1)
-                PGJPG = np.matmul(np.concatenate([PG[n:, :], -PG[:n, :]], axis=0).transpose(), PG)
-                VJU = np.concatenate([np.concatenate([GX.transpose(), J2k.transpose()], axis=1), np.concatenate([PGJPG, -GX], axis=1)], axis=0)
-                VJX = np.concatenate([eye2k, np.concatenate([GX[:, k:], -GX[:, :k]], axis=1)], axis=0)
-                # Direct way to get VJU and VJX
-                # U =  [-PG, XJ]; V = [XJ, -PG];	VJU = V'*[-U(n+1:end,:); U(1:n,:)];
-                # VJX = V'*JX;
+                # activate only if "Euclidean + Cayley" ----------------
+                Omega = lyap(XX, -skewXJG)
+                W = -JXG + np.matmul(XX, Omega)
+                W = -0.5 * (W + W.transpose())
+                PG = G - np.matmul(XJ, (0.5 * JXG)) - np.matmul(JX, Omega) + np.matmul(XJ, (0.5 * np.matmul(XX, Omega)))
+                if invH:
+                    PGXJ = np.matmul(-PG, XJ.transpose())
+                    H = PGXJ + PGXJ.transpose()
+                    HJ = np.concatenate((-H[:, n:], H[:, :n]), axis=0)
+                    RJX = np.matmul(H, JX)
+                else:
+                    U = np.matmul((-PG, XJ), axis=1)
+                    V = np.matmul((XJ, -PG), axis=1)
+                    VJU = np.matmul(V.transpose(), np.concatenate((-U[n:, :], U[:n, :]), axis=0))
+                    VJX = np.matmul(V.transpose(), JX)
         else:
             if metric == 1:
                 W = np.concatenate([-GX[:, k:], GX[:, :k]], axis=1)
@@ -295,7 +328,7 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
                 W = - JXG + np.matmul(XX, Omega)
                 W = np.matmul(- 0.5, (W + W.transpose()))
 
-        # ---------------------- Compute error ----------------------
+        # ---------------------- compute error ----------------------
         S = X - XP
         XDiff = lin.norm(S, 'fro') / np.sqrt(n)
         tauk = tau
@@ -313,9 +346,9 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
         out.times.append(time.time() - t)
 
         # print history
-        if (record >= 1 and np.mod(itr+1, 15)) == 0:
+        if (record >= 1 and np.mod(itr + 1, 15)) == 0:
             print('{:<7}  {:<7.3e} {:<7.3e}  {:<7.3e}  {:<7.3e}  {:<7.3e}  {:<7.3e}  {:<7.3e}'
-                  .format(itr+1, tauk, F, nrmG, XDiff, FDiff, XFeasi, nls))
+                  .format(itr + 1, tauk, F, nrmG, XDiff, FDiff, XFeasi, nls))
 
         # -------------------- Update step size ---------------------
         if 1 == opt.stepsize:  # Alternating BB
@@ -358,24 +391,24 @@ def spopt(X=None, fun=None, opt=None, *args, **kwargs):
         Cval = ((gamma * Qp * Cval) + F) / Q
 
     # ------------------------------------------------------------------------
-    # Output
+    # output
     if itr >= opt.mxitr:
         out.msg = 'exceed max iteration'
 
     if record >= 1:
         print('{} at...'.format(out.msg))
         print('{:<7}  {:<7.3e}  {:<7.3e}  {:<7.3e}  {:<7.3e}  {:<7.3e}  {:<7.3e}  {:<7.3e}'
-              .format(itr+1, tauk, F, nrmG, XDiff, FDiff, XFeasi, nls))
+              .format(itr + 1, tauk, F, nrmG, XDiff, FDiff, XFeasi, nls))
         print('------------------------------------------------------------------------')
 
     out.feaX = XFeasi
     out.nrmG = nrmG
     out.fval = F
-    out.itr = itr + 1
+    out.itr = itr
     return X, out
 
 
-# Nest-function: inner product
+# nest-function: inner product
 def iprod(x=None, y=None, *args, **kwargs):
     # a = real(sum(sum(conj(x).*y)));
     return np.real(sum(sum(np.multiply(x, y))))
@@ -383,3 +416,4 @@ def iprod(x=None, y=None, *args, **kwargs):
 
 if __name__ == '__main__':
     pass
+

@@ -2,19 +2,22 @@ from spopt import *
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
 
+"""
+ -------------------------------------------------------------------------
+ This demo shows how to call spopt to solve
 
-# -------------------------------------------------------------------------
-# This demo shows how to call spopt to solve
-#       min  f(X), s.t.  X'*J2n*X=J2k.
-# where J2k = [zeros(k,k),eye(k);-eye(k),zeros(k,k)].
-# -------------------------------------
-# objective:    nearest symplectic matrix problem, f(X):= norm(X-A,'fro')^2
-# solver:       Cayley and quasi-geodesic retraction (Canonical-like metric)
-# output:       function information, iterative figures
-# -------------------------------------
-# Author: Arun Pandey (Original src in MatLab: Bin Gao (https://www.gaobin.cc))
-#   Version 1.0 ...
-# --------------------------------------------------------------------------
+       min  f(X), s.t.  X'*J2n*X=J2k.
+
+ where J2k = [zeros(k,k),eye(k);-eye(k),zeros(k,k)].
+ -------------------------------------
+ objective:    nearest symplectic matrix problem, f(X):= norm(X-A,'fro')^2
+ solver:       Cayley and quasi-geodesic retraction (Canonical-like metric)
+ output:       function information, iterative figures
+ -------------------------------------
+ Author: Arun Pandey (Original src in MatLab: Bin Gao (https://www.gaobin.cc))
+ Version 1.0 ...
+ --------------------------------------------------------------------------
+"""
 
 # Objective function
 def fun(X=None, A=None, *args, **kwargs):
