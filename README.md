@@ -1,33 +1,34 @@
-Python implementation SpOpt package (originally in Matlab): Reimannian Optimization on Symplectic Stiefel Manifold 
+Python implementation of SpOpt package (originally in Matlab): Reimannian Optimization on Symplectic Stiefel Manifold 
 
-# spopt
+# PySpOpt
 A Python solver for Riemannian Optimization on the Symplectic Stiefel manifold. This was originally written in Matlab by [1].
 
 ## Problems
-This solver is to solve the following optimization problem,
+Solves the following optimization problem,
 ```math
 $ \min f(X), s.t.   X'J2n X = J2p, $
 ```
   
-where X is a 2n-by-2p matrix, J2n = [0 In; -In 0], and In is the n-by-n identity matrix.
+where X is a 2n-by-2p matrix, J2n = [0 I_n; -I_n 0], and I_n is the n-by-n identity matrix.
+
 ## Applications
-1. the nearest symplectic matrix problem:
+1. The nearest symplectic matrix problem:
 
 > min ||X-A||^2_F, s.t.  X' J2n X = J2p.
 
-2. the extrinsic mean problem:
+2. The extrinsic mean problem:
   
 > min 1/N sum_{i=1}^{i=N} ||X - A_i||^2_F, s.t.  X' J2n X = J2p.
   
-3. minimization of the Brockett cost function:
+3. Minimization of the Brockett cost function:
 
 > min trace(X'AXN-2BX'), s.t.  X' J2n X = J2p.
   
-4. symplectic eigenvalue problem:
+4. Symplectic eigenvalue problem:
 
 > min trace(X'AX), s.t.  X' J2n X = J2p.
   
-5. symplectic model order reduction:
+5. Symplectic model order reduction:
 
 > min ||M-XX^\dag M||, s.t.  X' J2n X = J2p, where X^\dag = J2p' X' J2n
 
