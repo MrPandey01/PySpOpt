@@ -5,32 +5,34 @@ A Python solver for Riemannian Optimization on the Symplectic Stiefel manifold. 
 
 ## Problems
 Solves the following optimization problem,
-```math
-$ \min f(X), s.t.   X'J2n X = J2p, $
-```
+
+$$ \min f(X), \quad s.t. \quad   X^{\top} J_{2n} X = J_{2p}, $$
+
   
-where X is a 2n-by-2p matrix, J2n = [0 I_n; -I_n 0], and I_n is the n-by-n identity matrix.
+where $X$ is a 2n-by-2p matrix,
+$J_{2n} = \begin{bmatrix} 0 & I_{n} \\\ - I_{n} & 0 \end{bmatrix}$,
+and $\mathbb{I}_{n}$ is the n-by-n identity matrix.
 
 ## Applications
 1. The nearest symplectic matrix problem:
 
-> min ||X-A||^2_F, s.t.  X' J2n X = J2p.
+$$ \min \Vert X-A \Vert ^{2}_{F}, \quad \text{s.t.} \quad X^{\top} J_{2n} X = J_{2p}. $$
 
 2. The extrinsic mean problem:
   
-> min 1/N sum_{i=1}^{i=N} ||X - A_i||^2_F, s.t.  X' J2n X = J2p.
+$$ \min \frac{1}{N} \sum_{i=1}^{i=N} \Vert X - A_{i} \Vert^{2}_{\mathrm{F}},\quad \text{s.t.}\quad  X^{\top} J_{2n} X = J_{2p}. $$
   
 3. Minimization of the Brockett cost function:
 
-> min trace(X'AXN-2BX'), s.t.  X' J2n X = J2p.
+$$ \min \mathrm{Tr}(X^{\top} A X - 2 B X^{\top}),\quad \text{s.t.}\quad  X^{\top} J_{2n} X = J_{2p}. $$
   
 4. Symplectic eigenvalue problem:
 
-> min trace(X'AX), s.t.  X' J2n X = J2p.
+$$ \min \mathrm{Tr}(X^{\top} A X),\quad \text{s.t.}\quad  X^{\top} J_{2n} X = J_{2p}. $$
   
 5. Symplectic model order reduction:
 
-> min ||M-XX^\dag M||, s.t.  X' J2n X = J2p, where X^\dag = J2p' X' J2n
+$$ \min \Vert M- X X^{\dagger} M \Vert, \quad \text{s.t.} \quad  X^{\top} J_{2n} X = J_{2p}, \quad \text{where} \quad X^{\dagger} = J_{2p}^{\top} X^{\top} J_{2n} .$$
 
 ## References
 [Bin Gao](https://www.gaobin.cc/), [Nguyen Thanh Son](https://sites.google.com/view/ntson), [P.-A. Absil](https://sites.uclouvain.be/absil/), [Tatjana Stykel](https://www.uni-augsburg.de/en/fakultaet/mntf/math/prof/numa/team/tatjana-stykel/)
